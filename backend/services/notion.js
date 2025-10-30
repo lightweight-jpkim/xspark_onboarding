@@ -6,10 +6,11 @@ export class NotionService {
   }
 
   /**
-   * Notion에서 관련 문서 검색
+   * Notion에서 관련 문서 검색 (개선된 버전 - 더 많은 문서 검색)
    */
   async searchDocuments(query) {
     try {
+      // 1. 쿼리로 직접 검색 (더 많은 결과)
       const response = await this.client.search({
         query: query,
         filter: {
@@ -20,23 +21,56 @@ export class NotionService {
           direction: 'descending',
           timestamp: 'last_edited_time'
         },
-        page_size: 5
+        page_size: 20  // 5에서 20으로 증가
       });
 
-      // 각 페이지의 내용 가져오기
+      // 2. 만약 검색 결과가 적다면, 전체 페이지도 조회 (xspark 관련)
+      let allPages = response.results;
+
+      if (response.results.length < 5) {
+        console.log('검색 결과가 적어서 전체 페이지 조회 시도...');
+        const allPagesResponse = await this.client.search({
+          filter: {
+            property: 'object',
+            value: 'page'
+          },
+          sort: {
+            direction: 'descending',
+            timestamp: 'last_edited_time'
+          },
+          page_size: 50
+        });
+
+        // xspark 관련 페이지 필터링
+        const xsparkPages = allPagesResponse.results.filter(page => {
+          const title = this.extractTitle(page).toLowerCase();
+          return title.includes('xspark') ||
+                 title.includes('product') ||
+                 title.includes('프로덕트') ||
+                 title.includes('개발');
+        });
+
+        // 중복 제거하고 병합
+        const existingIds = new Set(allPages.map(p => p.id));
+        const newPages = xsparkPages.filter(p => !existingIds.has(p.id));
+        allPages = [...allPages, ...newPages].slice(0, 20);
+      }
+
+      // 각 페이지의 내용 가져오기 (더 많은 내용)
       const documents = await Promise.all(
-        response.results.map(async (page) => {
+        allPages.map(async (page) => {
           const content = await this.getPageContent(page.id);
           return {
             id: page.id,
             title: this.extractTitle(page),
-            content: content,
+            content: content,  // 제한 해제 - 전체 내용
             url: page.url,
             lastEditedTime: page.last_edited_time
           };
         })
       );
 
+      console.log(`✅ 총 ${documents.length}개 문서 검색됨`);
       return documents;
     } catch (error) {
       console.error('Notion search error:', error);

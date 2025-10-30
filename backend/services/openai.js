@@ -98,10 +98,10 @@ xspark 프로덕트에 대해 무엇이든 물어보세요!"
 
 
       const userPrompt = context
-        ? `다음은 관련 문서 내용입니다:\n\n${context}\n\n질문: ${userQuery}`
-        : `질문: ${userQuery}\n\n참고: 관련 문서를 찾지 못했습니다. 일반적인 지식으로 답변해주세요.`;
+        ? `다음은 관련 문서 내용입니다 (총 ${notionDocs.length}개 문서):\n\n${context}\n\n질문: ${userQuery}\n\n💡 위 문서들을 종합적으로 분석하여 답변해주세요. 단편적인 정보가 아닌, 전체 맥락을 고려한 통합적인 답변을 제공해주세요.`
+        : `질문: ${userQuery}\n\n참고: 관련 문서를 찾지 못했습니다. 일반적인 지식으로 답변하되, 사용자에게 더 구체적인 질문을 해보라고 제안해주세요.`;
 
-      // OpenAI API 호출
+      // OpenAI API 호출 (더 긴 답변 생성)
       const response = await this.client.chat.completions.create({
         model: this.model,
         messages: [
@@ -115,7 +115,7 @@ xspark 프로덕트에 대해 무엇이든 물어보세요!"
           }
         ],
         temperature: 0.7,
-        max_tokens: 1000,
+        max_tokens: 2500,  // 1000에서 2500으로 증가 - 더 상세한 답변
         top_p: 1,
         frequency_penalty: 0,
         presence_penalty: 0
@@ -129,7 +129,7 @@ xspark 프로덕트에 대해 무엇이든 물어보세요!"
   }
 
   /**
-   * Notion 문서를 컨텍스트 문자열로 변환
+   * Notion 문서를 컨텍스트 문자열로 변환 (개선 버전 - 더 많은 내용)
    */
   formatContext(documents) {
     if (!documents || documents.length === 0) {
@@ -138,22 +138,33 @@ xspark 프로덕트에 대해 무엇이든 물어보세요!"
 
     return documents
       .map((doc, index) => {
-        const content = this.truncateContent(doc.content, 1500);
-        return `[문서 ${index + 1}: ${doc.title}]\n${content}`;
+        // 문서별 최대 길이를 늘림: 1500 -> 5000
+        const content = this.truncateContent(doc.content, 5000);
+        const lastEdited = doc.lastEditedTime
+          ? `\n마지막 업데이트: ${new Date(doc.lastEditedTime).toLocaleDateString('ko-KR')}`
+          : '';
+
+        return `[문서 ${index + 1}: ${doc.title}]${lastEdited}\nURL: ${doc.url}\n\n${content}`;
       })
       .join('\n\n---\n\n');
   }
 
   /**
-   * 긴 문서 내용 축약 (토큰 절약)
+   * 긴 문서 내용 축약 (토큰 절약) - 한계 증가
    */
-  truncateContent(content, maxLength = 1500) {
+  truncateContent(content, maxLength = 5000) {
     if (content.length <= maxLength) {
       return content;
     }
 
-    const truncated = content.substring(0, maxLength);
-    return truncated + '\n\n[... 문서가 길어 일부만 표시됨 ...]';
+    // 앞부분 70%, 뒷부분 30% 포함 (전체 맥락 파악)
+    const frontLength = Math.floor(maxLength * 0.7);
+    const backLength = Math.floor(maxLength * 0.3);
+
+    const frontPart = content.substring(0, frontLength);
+    const backPart = content.substring(content.length - backLength);
+
+    return frontPart + '\n\n[... 중간 내용 생략 ...]\n\n' + backPart;
   }
 
   /**
