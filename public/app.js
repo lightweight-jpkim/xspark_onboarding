@@ -166,15 +166,24 @@ async function initializeApp() {
         isInitialized = true;
         console.log('✅ 초기화 완료:', data);
 
-        // 초기화 성공 메시지
+        // 초기화 성공 메시지 (두 가지 응답 형태 처리)
         hideInitMessage();
-        addMessage(
-            `안녕하세요! xspark 프로덕트 지식 관리 AI입니다.\\n\\n` +
-            `✅ ${data.stats.totalPages}개 페이지를 성공적으로 로딩했습니다.\\n` +
-            `⏱️ 로딩 시간: ${data.stats.loadTimeSeconds}초\\n\\n` +
-            `xspark 프로덕트에 대해 무엇이든 물어보세요!`,
-            'bot'
-        );
+
+        let welcomeMessage = `안녕하세요! xspark 프로덕트 지식 관리 AI입니다.\n\n`;
+
+        if (data.status === 'already_cached') {
+            // 이미 캐시된 경우
+            welcomeMessage += `✅ ${data.totalPages}개 페이지가 이미 로딩되어 있습니다.\n`;
+            welcomeMessage += `⚡ 즉시 사용 가능합니다!\n\n`;
+        } else if (data.stats) {
+            // 새로 로딩한 경우
+            welcomeMessage += `✅ ${data.stats.totalPages}개 페이지를 성공적으로 로딩했습니다.\n`;
+            welcomeMessage += `⏱️ 로딩 시간: ${data.stats.loadTimeSeconds}초\n\n`;
+        }
+
+        welcomeMessage += `xspark 프로덕트에 대해 무엇이든 물어보세요!`;
+
+        addMessage(welcomeMessage, 'bot');
 
         // 입력 필드 활성화
         userInput.disabled = false;
