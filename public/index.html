@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xspark 온보딩 어시스턴트</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🎯 xspark 온보딩 어시스턴트</h1>
+            <p class="subtitle">궁금한 점을 물어보세요!</p>
+        </header>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome-message">
+                <div class="message bot-message">
+                    <div class="message-content">
+                        <p>안녕하세요! xspark 온보딩 어시스턴트입니다.</p>
+                        <p>개발 툴 사용법이나 프로세스에 대해 궁금한 점을 물어보세요.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <form id="chatForm">
+                <input
+                    type="text"
+                    id="userInput"
+                    placeholder="질문을 입력하세요..."
+                    autocomplete="off"
+                    required
+                >
+                <button type="submit" id="sendButton">
+                    <span>전송</span>
+                </button>
+            </form>
+        </div>
+
+        <div class="loading" id="loadingIndicator" style="display: none;">
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
