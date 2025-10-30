@@ -7,11 +7,17 @@ export class OpenAIService {
   }
 
   /**
-   * RAG 기반 답변 생성
+   * RAG 기반 답변 생성 (전체 워크스페이스 구조 포함)
    */
-  async generateAnswer(userQuery, notionDocs) {
+  async generateAnswer(userQuery, notionDocs, allPages = null) {
     try {
-      // Notion 문서를 컨텍스트로 변환
+      // 전체 워크스페이스 맵 생성
+      let workspaceMap = '';
+      if (allPages && allPages.length > 0) {
+        workspaceMap = this.formatWorkspaceMap(allPages);
+      }
+
+      // 관련 문서를 상세 컨텍스트로 변환
       const context = this.formatContext(notionDocs);
 
       // 시스템 프롬프트
@@ -97,9 +103,31 @@ xspark 프로덕트에 대해 무엇이든 물어보세요!"
 - Notion 지식베이스를 최신 상태로 유지합니다`;
 
 
-      const userPrompt = context
-        ? `다음은 관련 문서 내용입니다 (총 ${notionDocs.length}개 문서):\n\n${context}\n\n질문: ${userQuery}\n\n💡 위 문서들을 종합적으로 분석하여 답변해주세요. 단편적인 정보가 아닌, 전체 맥락을 고려한 통합적인 답변을 제공해주세요.`
-        : `질문: ${userQuery}\n\n참고: 관련 문서를 찾지 못했습니다. 일반적인 지식으로 답변하되, 사용자에게 더 구체적인 질문을 해보라고 제안해주세요.`;
+      let userPrompt = '';
+
+      // 워크스페이스 전체 구조 먼저 제공
+      if (workspaceMap) {
+        userPrompt += `📚 Notion 워크스페이스 전체 구조:\n${workspaceMap}\n\n`;
+      }
+
+      // 관련 문서 상세 내용
+      if (context) {
+        userPrompt += `📄 관련 문서 상세 내용 (총 ${notionDocs.length}개):\n\n${context}\n\n`;
+      }
+
+      // 질문 및 지시사항
+      userPrompt += `❓ 질문: ${userQuery}\n\n`;
+
+      if (context) {
+        userPrompt += `💡 답변 지침:\n`;
+        userPrompt += `- 위 문서들을 종합적으로 분석하여 답변해주세요\n`;
+        userPrompt += `- 단편적인 정보가 아닌, 전체 맥락을 고려한 통합적인 답변을 제공해주세요\n`;
+        userPrompt += `- 여러 문서에 걸쳐 있는 정보를 연결하여 설명해주세요\n`;
+        userPrompt += `- 마지막 업데이트 시점도 함께 언급해주세요`;
+      } else {
+        userPrompt += `⚠️ 참고: 직접적으로 관련된 문서를 찾지 못했습니다.\n`;
+        userPrompt += `전체 워크스페이스 구조를 참고하여 답변하거나, 사용자에게 더 구체적인 질문을 제안해주세요.`;
+      }
 
       // OpenAI API 호출 (더 긴 답변 생성)
       const response = await this.client.chat.completions.create({
@@ -126,6 +154,34 @@ xspark 프로덕트에 대해 무엇이든 물어보세요!"
       console.error('OpenAI API error:', error);
       throw new Error('AI 답변 생성 중 오류가 발생했습니다.');
     }
+  }
+
+  /**
+   * 전체 워크스페이스 구조를 간략하게 포맷
+   */
+  formatWorkspaceMap(allPages) {
+    // 페이지를 최근 업데이트 순으로 정렬
+    const sorted = [...allPages].sort((a, b) =>
+      new Date(b.lastEditedTime) - new Date(a.lastEditedTime)
+    );
+
+    // 상위 20개 페이지만 포함 (토큰 절약)
+    const top20 = sorted.slice(0, 20);
+
+    let map = `총 ${allPages.length}개 페이지 (최근 20개만 표시):\n\n`;
+
+    top20.forEach((page, index) => {
+      const lastEdited = new Date(page.lastEditedTime).toLocaleDateString('ko-KR');
+      const preview = page.content
+        ? page.content.substring(0, 100).replace(/\n/g, ' ')
+        : '(내용 없음)';
+
+      map += `${index + 1}. [${page.title}]\n`;
+      map += `   최종 수정: ${lastEdited}\n`;
+      map += `   미리보기: ${preview}...\n\n`;
+    });
+
+    return map;
   }
 
   /**

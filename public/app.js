@@ -1,5 +1,6 @@
 // API 엔드포인트
 const API_URL = '/api/chat';
+const INIT_URL = '/api/init';
 
 // DOM 요소
 const chatForm = document.getElementById('chatForm');
@@ -11,8 +12,15 @@ const loadingIndicator = document.getElementById('loadingIndicator');
 // 대화 ID 생성 (세션 관리용)
 const conversationId = generateConversationId();
 
+// 초기화 상태
+let isInitialized = false;
+let initializationError = null;
+
 // 이벤트 리스너
 chatForm.addEventListener('submit', handleSubmit);
+
+// 앱 로드 시 초기화
+window.addEventListener('DOMContentLoaded', initializeApp);
 
 // 폼 제출 핸들러
 async function handleSubmit(e) {
@@ -137,5 +145,100 @@ function generateConversationId() {
     return `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// 초기 포커스
-userInput.focus();
+// 앱 초기화 함수
+async function initializeApp() {
+    console.log('🚀 앱 초기화 시작...');
+
+    // 초기화 메시지 표시
+    showInitMessage('Notion 워크스페이스 로딩 중... (최대 20초 소요)');
+
+    try {
+        const response = await fetch(INIT_URL, {
+            method: 'GET'
+        });
+
+        if (!response.ok) {
+            throw new Error(`초기화 실패: HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        isInitialized = true;
+        console.log('✅ 초기화 완료:', data);
+
+        // 초기화 성공 메시지
+        hideInitMessage();
+        addMessage(
+            `안녕하세요! xspark 프로덕트 지식 관리 AI입니다.\\n\\n` +
+            `✅ ${data.stats.totalPages}개 페이지를 성공적으로 로딩했습니다.\\n` +
+            `⏱️ 로딩 시간: ${data.stats.loadTimeSeconds}초\\n\\n` +
+            `xspark 프로덕트에 대해 무엇이든 물어보세요!`,
+            'bot'
+        );
+
+        // 입력 필드 활성화
+        userInput.disabled = false;
+        userInput.focus();
+
+    } catch (error) {
+        console.error('❌ 초기화 오류:', error);
+        initializationError = error;
+        isInitialized = false;
+
+        // 오류 메시지
+        hideInitMessage();
+        addMessage(
+            `초기화 중 오류가 발생했습니다: ${error.message}\\n\\n` +
+            `하지만 질문을 하시면 자동으로 재시도됩니다.`,
+            'bot',
+            null,
+            true
+        );
+
+        // 입력 필드는 활성화 (질문 시 자동으로 초기화 재시도)
+        userInput.disabled = false;
+        userInput.focus();
+    }
+}
+
+// 초기화 메시지 표시
+function showInitMessage(message) {
+    const initDiv = document.createElement('div');
+    initDiv.id = 'initMessage';
+    initDiv.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px 50px;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        font-size: 18px;
+        z-index: 1000;
+        text-align: center;
+    `;
+
+    initDiv.innerHTML = `
+        <div style="margin-bottom: 15px;">⏳</div>
+        <div>${message}</div>
+        <div style="margin-top: 15px; font-size: 14px; opacity: 0.9;">잠시만 기다려주세요...</div>
+    `;
+
+    document.body.appendChild(initDiv);
+}
+
+// 초기화 메시지 숨김
+function hideInitMessage() {
+    const initDiv = document.getElementById('initMessage');
+    if (initDiv) {
+        initDiv.style.opacity = '0';
+        initDiv.style.transition = 'opacity 0.3s';
+        setTimeout(() => initDiv.remove(), 300);
+    }
+}
+
+// 초기 상태: 입력 필드 비활성화
+userInput.disabled = true;
+userInput.placeholder = '초기화 중...';
