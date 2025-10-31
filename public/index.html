@@ -13,6 +13,30 @@
             <p class="subtitle">궁금한 점을 물어보세요!</p>
         </header>
 
+        <!-- 회의 녹음 섹션 -->
+        <div class="meeting-recorder" id="meetingRecorder">
+            <div class="recorder-controls">
+                <button id="startRecordingBtn" class="recorder-btn start-btn">
+                    <span class="btn-icon">🎤</span>
+                    <span class="btn-text">회의 녹음 시작</span>
+                </button>
+                <button id="stopRecordingBtn" class="recorder-btn stop-btn" style="display: none;">
+                    <span class="btn-icon">⏹️</span>
+                    <span class="btn-text">녹음 중지</span>
+                </button>
+                <div class="recording-status" id="recordingStatus" style="display: none;">
+                    <span class="recording-indicator"></span>
+                    <span class="recording-time" id="recordingTime">00:00</span>
+                </div>
+            </div>
+            <div class="recorder-progress" id="recorderProgress" style="display: none;">
+                <div class="progress-text" id="progressText">처리 중...</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+        </div>
+
         <div class="chat-container" id="chatContainer">
             <div class="welcome-message">
                 <div class="message bot-message">
@@ -49,5 +73,6 @@
     </div>
 
     <script src="/app.js?v=20251030-02"></script>
+    <script src="/recorder.js?v=20251030-01"></script>
 </body>
 </html>

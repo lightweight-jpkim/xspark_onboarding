@@ -26,7 +26,9 @@
     "openai": "^4.20.0",
     "@notionhq/client": "^2.2.14",
     "dotenv": "^16.3.1",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "formidable": "^3.5.1",
+    "form-data": "^4.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
