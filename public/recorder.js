@@ -7,6 +7,9 @@ class MeetingRecorder {
         this.timerInterval = null;
         this.selectedPageId = null;
         this.allPages = [];
+        this.micStream = null;
+        this.systemStream = null;
+        this.audioContext = null;
 
         // DOM 요소
         this.startBtn = document.getElementById('startRecordingBtn');
@@ -39,7 +42,7 @@ class MeetingRecorder {
                 // 데이터베이스만 사용 (페이지 항목은 제외)
                 const databases = data.accessible.databases?.list || [];
 
-                console.log('✅ [RECORDER v1761876425] 데이터베이스만 로드:', databases.length);
+                console.log('✅ [RECORDER v1761876704] 데이터베이스만 로드:', databases.length);
                 this.allPages = databases;
 
                 // 드롭다운 채우기
@@ -102,12 +105,48 @@ class MeetingRecorder {
 
     async startRecording() {
         try {
-            // 마이크 권한 요청
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            // 1. 마이크 스트림
+            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-            // MediaRecorder 설정
-            this.mediaRecorder = new MediaRecorder(stream);
+            // 2. 시스템 오디오 스트림 (화상회의 소리)
+            let systemStream = null;
+            try {
+                // Chrome: 탭 오디오 캡처
+                systemStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: false,
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        sampleRate: 44100
+                    }
+                });
+            } catch (e) {
+                console.warn('시스템 오디오 캡처 실패 (마이크만 사용):', e.message);
+            }
+
+            // 3. 오디오 믹싱 (마이크 + 시스템 오디오)
+            const audioContext = new AudioContext();
+            const destination = audioContext.createMediaStreamDestination();
+
+            // 마이크 추가
+            const micSource = audioContext.createMediaStreamSource(micStream);
+            micSource.connect(destination);
+
+            // 시스템 오디오 추가 (있으면)
+            if (systemStream) {
+                const systemSource = audioContext.createMediaStreamSource(systemStream);
+                systemSource.connect(destination);
+                console.log('✅ 마이크 + 시스템 오디오 믹싱');
+            } else {
+                console.log('ℹ️ 마이크만 녹음');
+            }
+
+            // MediaRecorder 설정 (믹싱된 스트림 사용)
+            this.mediaRecorder = new MediaRecorder(destination.stream);
             this.audioChunks = [];
+            this.micStream = micStream;
+            this.systemStream = systemStream;
+            this.audioContext = audioContext;
 
             this.mediaRecorder.ondataavailable = (event) => {
                 this.audioChunks.push(event.data);
@@ -141,8 +180,16 @@ class MeetingRecorder {
         if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
             this.mediaRecorder.stop();
 
-            // 스트림 정지
-            this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            // 모든 스트림 정지
+            if (this.micStream) {
+                this.micStream.getTracks().forEach(track => track.stop());
+            }
+            if (this.systemStream) {
+                this.systemStream.getTracks().forEach(track => track.stop());
+            }
+            if (this.audioContext) {
+                this.audioContext.close();
+            }
 
             // 타이머 정지
             clearInterval(this.timerInterval);

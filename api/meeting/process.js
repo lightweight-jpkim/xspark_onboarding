@@ -3,7 +3,7 @@ import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
 import { OpenAI } from 'openai';
-import config from '../../backend/config/index.js';
+import appConfig from '../../backend/config/index.js';
 import { NotionService } from '../../backend/services/notion.js';
 
 // Vercel에서 body parser 비활성화 (raw request 처리)
@@ -13,8 +13,8 @@ export const config = {
   }
 };
 
-const openai = new OpenAI({ apiKey: config.openai.apiKey });
-const notionService = new NotionService(config.notion.apiToken);
+const openai = new OpenAI({ apiKey: appConfig.openai.apiKey });
+const notionService = new NotionService(appConfig.notion.apiToken);
 
 export default async function handler(req, res) {
   // CORS 설정
@@ -165,7 +165,7 @@ async function formatMeetingNotes(transcript) {
 한국어로 작성하고, 명확하고 간결하게 정리하세요.`;
 
     const response = await openai.chat.completions.create({
-      model: config.openai.model,
+      model: appConfig.openai.model,
       messages: [
         {
           role: 'system',
