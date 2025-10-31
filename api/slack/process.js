@@ -1,5 +1,5 @@
 // Vercel Serverless Function - Slack 메시지 수집 및 GPT 정리
-import { SlackService } from '../../backend/services/slack.js';
+import { SlackService } from '../_lib/slack.js';
 import { OpenAI } from 'openai';
 import appConfig from '../../backend/config/index.js';
 
