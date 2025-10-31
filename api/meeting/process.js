@@ -282,7 +282,7 @@ ${transcript}`;
         }
       ],
       temperature: 0.3, // 더 일관성 있는 출력을 위해 낮춤
-      max_tokens: 3000  // 더 자세한 회의록을 위해 증가
+      max_completion_tokens: 3000  // GPT-5는 max_completion_tokens 사용
     });
 
     const formattedNotes = response.choices[0].message.content;

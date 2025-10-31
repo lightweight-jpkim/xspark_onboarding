@@ -211,7 +211,7 @@ ${conversationText}`;
         { role: 'user', content: userPrompt }
       ],
       temperature: 0.3,
-      max_tokens: 8000  // GPT-5는 더 긴 출력 지원 (128K)
+      max_completion_tokens: 8000  // GPT-5는 max_completion_tokens 사용 (128K 출력 지원)
     });
 
     const formattedReport = response.choices[0].message.content;
