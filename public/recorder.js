@@ -39,6 +39,7 @@ class MeetingRecorder {
                 // 데이터베이스만 사용 (페이지 항목은 제외)
                 const databases = data.accessible.databases?.list || [];
 
+                console.log('✅ [RECORDER v1761876425] 데이터베이스만 로드:', databases.length);
                 this.allPages = databases;
 
                 // 드롭다운 채우기
