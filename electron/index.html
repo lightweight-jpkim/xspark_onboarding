@@ -11,6 +11,7 @@
         <header class="header">
             <h1>🎯 xspark 온보딩 어시스턴트</h1>
             <p class="subtitle">궁금한 점을 물어보세요!</p>
+            <div class="version-badge">v2.1.0</div>
         </header>
 
         <!-- 회의 녹음 섹션 -->
@@ -45,6 +46,43 @@
                 <div class="progress-text" id="progressText">처리 중...</div>
                 <div class="progress-bar">
                     <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slack 일일 리포트 섹션 -->
+        <div class="slack-reporter" id="slackReporter">
+            <div class="slack-header">
+                <h3>📊 Slack 채널 일일 정리</h3>
+            </div>
+            <div class="slack-setup" id="slackSetup">
+                <div class="slack-field">
+                    <label for="slackChannel" class="field-label">📁 채널 선택:</label>
+                    <select id="slackChannel" class="slack-select">
+                        <option value="">로딩 중...</option>
+                    </select>
+                </div>
+                <div class="slack-field">
+                    <label for="slackDate" class="field-label">📅 날짜:</label>
+                    <input type="date" id="slackDate" class="slack-input" />
+                </div>
+                <div class="slack-field">
+                    <label for="slackSaveLocation" class="field-label">📤 저장 위치:</label>
+                    <select id="slackSaveLocation" class="slack-select">
+                        <option value="">로딩 중...</option>
+                    </select>
+                </div>
+            </div>
+            <div class="slack-controls">
+                <button id="processSlackBtn" class="slack-btn process-btn" disabled>
+                    <span class="btn-icon">🔄</span>
+                    <span class="btn-text">채널 내용 가져오기</span>
+                </button>
+            </div>
+            <div class="slack-progress" id="slackProgress" style="display: none;">
+                <div class="progress-text" id="slackProgressText">처리 중...</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="slackProgressFill"></div>
                 </div>
             </div>
         </div>
@@ -84,7 +122,8 @@
         </div>
     </div>
 
-    <script src="./app.js?v=20251031-04"></script>
-    <script src="./recorder.js?v=20251031-04"></script>
+    <script src="./app.js?v=20251031-05"></script>
+    <script src="./recorder.js?v=20251031-05"></script>
+    <script src="./slack.js?v=20251031-05"></script>
 </body>
 </html>

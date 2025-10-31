@@ -31,7 +31,7 @@ if (config.isDevelopment) {
 }
 
 // 정적 파일 제공 (프론트엔드)
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // API 라우트
 app.use('/api', chatRouter);

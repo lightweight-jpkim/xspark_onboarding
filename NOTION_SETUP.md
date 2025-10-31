@@ -66,10 +66,10 @@ xspark 프로덕트 관련 **모든 중요 페이지**에서:
 
 ```
 1. Notion 페이지 열기
-2. 우측 상단 ⋯ (더보기) 클릭
-3. "Connections" 또는 "연결" 클릭
-4. "xspark_onboarding" Integration 선택
-5. "Confirm" 또는 "확인" 클릭
+2. 우측 상단 "공유(Share)" 버튼 클릭
+3. 하단 "Invite" 또는 "초대" 입력창에 "xspark_onboarding" 입력
+4. 검색 결과에서 "xspark_onboarding" Integration 선택
+5. "Invite" 또는 "초대" 클릭
 ```
 
 **연결해야 할 페이지 예시:**

@@ -1,14 +1,16 @@
 {
   "name": "xspark_onboarding",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "description": "Notion-based AI onboarding assistant for internal dev tools",
   "type": "module",
-  "main": "backend/server.js",
+  "main": "electron/main.cjs",
   "scripts": {
     "start": "node backend/server.js",
     "dev": "nodemon backend/server.js",
     "build": "echo 'No build step required'",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "electron": "NODE_ENV=development electron electron/main.cjs",
+    "electron:build": "electron-builder --mac"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -22,15 +24,43 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "openai": "^4.20.0",
     "@notionhq/client": "^2.2.14",
-    "dotenv": "^16.3.1",
+    "@slack/web-api": "^7.12.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "form-data": "^4.0.0",
     "formidable": "^3.5.1",
-    "form-data": "^4.0.0"
+    "openai": "^4.20.0"
   },
   "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.12",
     "nodemon": "^3.0.1"
+  },
+  "build": {
+    "appId": "com.xspark.onboarding",
+    "productName": "xspark Onboarding",
+    "files": [
+      "electron/**/*",
+      "!node_modules",
+      "!backend",
+      "!public"
+    ],
+    "directories": {
+      "buildResources": "electron/assets",
+      "output": "dist"
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "electron/entitlements.mac.plist",
+      "entitlementsInherit": "electron/entitlements.mac.plist"
+    }
   }
 }

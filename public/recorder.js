@@ -110,23 +110,62 @@ class MeetingRecorder {
 
     async startRecording() {
         try {
+            // Electron 환경 감지
+            const isElectron = window.electronAPI && window.electronAPI.isElectron;
+
             // 1. 마이크 스트림
             const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-            // 2. 시스템 오디오 스트림 (화상회의 소리)
+            // 2. 시스템 오디오 스트림
             let systemStream = null;
-            try {
-                // Chrome: 탭 오디오 캡처
-                systemStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: false,
-                    audio: {
-                        echoCancellation: true,
-                        noiseSuppression: true,
-                        sampleRate: 44100
+
+            if (isElectron) {
+                // Electron: desktopCapturer 사용 (진짜 시스템 오디오!)
+                try {
+                    console.log('🖥️ Electron 모드: 시스템 오디오 캡처');
+                    const sources = await window.electronAPI.getSystemAudioSources();
+
+                    if (sources.length > 0) {
+                        // 첫 번째 화면 선택 (나중에 UI로 개선 가능)
+                        const selectedSource = sources[0];
+                        console.log(`✅ 선택된 소스: ${selectedSource.name}`);
+
+                        systemStream = await navigator.mediaDevices.getUserMedia({
+                            audio: {
+                                mandatory: {
+                                    chromeMediaSource: 'desktop',
+                                    chromeMediaSourceId: selectedSource.id
+                                }
+                            },
+                            video: {
+                                mandatory: {
+                                    chromeMediaSource: 'desktop',
+                                    chromeMediaSourceId: selectedSource.id
+                                }
+                            }
+                        });
+
+                        // 비디오 트랙 제거 (오디오만 필요)
+                        systemStream.getVideoTracks().forEach(track => track.stop());
                     }
-                });
-            } catch (e) {
-                console.warn('시스템 오디오 캡처 실패 (마이크만 사용):', e.message);
+                } catch (e) {
+                    console.error('Electron 시스템 오디오 캡처 실패:', e);
+                }
+            } else {
+                // 브라우저: getDisplayMedia (탭 오디오만)
+                try {
+                    console.log('🌐 브라우저 모드: 탭 오디오 캡처');
+                    systemStream = await navigator.mediaDevices.getDisplayMedia({
+                        video: false,
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            sampleRate: 44100
+                        }
+                    });
+                } catch (e) {
+                    console.warn('시스템 오디오 캡처 실패 (마이크만 사용):', e.message);
+                }
             }
 
             // 3. 오디오 믹싱 (마이크 + 시스템 오디오)
