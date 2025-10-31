@@ -10,6 +10,8 @@ class MeetingRecorder {
         this.micStream = null;
         this.systemStream = null;
         this.audioContext = null;
+        this.analyser = null;
+        this.animationId = null;
 
         // DOM 요소
         this.startBtn = document.getElementById('startRecordingBtn');
@@ -20,6 +22,9 @@ class MeetingRecorder {
         this.progressText = document.getElementById('progressText');
         this.progressFill = document.getElementById('progressFill');
         this.saveLocationSelect = document.getElementById('saveLocation');
+        this.audioLevel = document.getElementById('audioLevel');
+        this.audioVisualizer = document.getElementById('audioVisualizer');
+        this.canvasCtx = this.audioVisualizer.getContext('2d');
 
         // 이벤트 리스너
         this.startBtn.addEventListener('click', () => this.startRecording());
@@ -42,7 +47,7 @@ class MeetingRecorder {
                 // 데이터베이스만 사용 (페이지 항목은 제외)
                 const databases = data.accessible.databases?.list || [];
 
-                console.log('✅ [RECORDER v1761876704] 데이터베이스만 로드:', databases.length);
+                console.log('✅ [RECORDER v1761877305] 데이터베이스만 로드:', databases.length);
                 this.allPages = databases;
 
                 // 드롭다운 채우기
@@ -128,14 +133,21 @@ class MeetingRecorder {
             const audioContext = new AudioContext();
             const destination = audioContext.createMediaStreamDestination();
 
+            // 오디오 분석기 추가
+            this.analyser = audioContext.createAnalyser();
+            this.analyser.fftSize = 2048;
+            this.analyser.smoothingTimeConstant = 0.8;
+
             // 마이크 추가
             const micSource = audioContext.createMediaStreamSource(micStream);
             micSource.connect(destination);
+            micSource.connect(this.analyser); // 분석기에 연결
 
             // 시스템 오디오 추가 (있으면)
             if (systemStream) {
                 const systemSource = audioContext.createMediaStreamSource(systemStream);
                 systemSource.connect(destination);
+                systemSource.connect(this.analyser); // 분석기에도 연결
                 console.log('✅ 마이크 + 시스템 오디오 믹싱');
             } else {
                 console.log('ℹ️ 마이크만 녹음');
@@ -164,9 +176,13 @@ class MeetingRecorder {
             this.startBtn.style.display = 'none';
             this.stopBtn.style.display = 'flex';
             this.recordingStatus.style.display = 'flex';
+            this.audioVisualizer.style.display = 'block';
 
             // 타이머 시작
             this.timerInterval = setInterval(() => this.updateTimer(), 1000);
+
+            // 오디오 모니터링 시작
+            this.startAudioMonitoring();
 
             console.log('🎤 녹음 시작');
 
@@ -194,6 +210,12 @@ class MeetingRecorder {
             // 타이머 정지
             clearInterval(this.timerInterval);
 
+            // 오디오 모니터링 중지
+            if (this.animationId) {
+                cancelAnimationFrame(this.animationId);
+                this.animationId = null;
+            }
+
             // UI 업데이트
             this.stopBtn.disabled = true;
             this.stopBtn.querySelector('.btn-text').textContent = '처리 중...';
@@ -208,6 +230,66 @@ class MeetingRecorder {
         const seconds = Math.floor((elapsed % 60000) / 1000);
         this.recordingTime.textContent =
             `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    startAudioMonitoring() {
+        const bufferLength = this.analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        const WIDTH = this.audioVisualizer.width;
+        const HEIGHT = this.audioVisualizer.height;
+
+        const draw = () => {
+            this.animationId = requestAnimationFrame(draw);
+
+            this.analyser.getByteTimeDomainData(dataArray);
+
+            // 배경 지우기
+            this.canvasCtx.fillStyle = '#f5f5f5';
+            this.canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+
+            // 파형 그리기
+            this.canvasCtx.lineWidth = 2;
+            this.canvasCtx.strokeStyle = '#667eea';
+            this.canvasCtx.beginPath();
+
+            const sliceWidth = WIDTH / bufferLength;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                const v = dataArray[i] / 128.0;
+                const y = (v * HEIGHT) / 2;
+
+                if (i === 0) {
+                    this.canvasCtx.moveTo(x, y);
+                } else {
+                    this.canvasCtx.lineTo(x, y);
+                }
+
+                x += sliceWidth;
+            }
+
+            this.canvasCtx.lineTo(WIDTH, HEIGHT / 2);
+            this.canvasCtx.stroke();
+
+            // 오디오 레벨 계산
+            const average = dataArray.reduce((a, b) => a + b, 0) / bufferLength;
+            const deviation = Math.abs(average - 128);
+            const db = Math.round(20 * Math.log10(deviation / 128 + 0.01));
+
+            // 레벨 표시 업데이트
+            if (deviation < 1) {
+                this.audioLevel.textContent = '🔇 0dB (너무 조용함!)';
+                this.audioLevel.style.color = '#f44336';
+            } else if (deviation < 5) {
+                this.audioLevel.textContent = `🔉 ${db}dB`;
+                this.audioLevel.style.color = '#ff9800';
+            } else {
+                this.audioLevel.textContent = `🔊 ${db}dB`;
+                this.audioLevel.style.color = '#4caf50';
+            }
+        };
+
+        draw();
     }
 
     async processRecording() {
@@ -312,10 +394,13 @@ class MeetingRecorder {
         this.stopBtn.disabled = false;
         this.stopBtn.querySelector('.btn-text').textContent = '녹음 중지';
         this.recordingStatus.style.display = 'none';
+        this.audioVisualizer.style.display = 'none';
         this.recorderProgress.style.display = 'none';
         this.progressText.style.color = '#666';
         this.progressFill.style.width = '0%';
         this.recordingTime.textContent = '00:00';
+        this.audioLevel.textContent = '🔇 0dB';
+        this.audioLevel.style.color = '#666';
     }
 }
 
