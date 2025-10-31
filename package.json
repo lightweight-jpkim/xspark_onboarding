@@ -1,6 +1,6 @@
 {
   "name": "xspark_onboarding",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Notion-based AI onboarding assistant for internal dev tools",
   "type": "module",
   "main": "electron/main.cjs",
