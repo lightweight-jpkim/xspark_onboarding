@@ -205,13 +205,13 @@ ${date ? '📅 **날짜별 타임라인**' : '📅 **전체 타임라인 (주차
 ${conversationText}`;
 
     const response = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || appConfig.openai.model || 'gpt-5',
+      model: process.env.OPENAI_MODEL || appConfig.openai.model || 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      // GPT-5는 temperature 커스터마이징 미지원 (기본값 1 사용)
-      max_completion_tokens: 8000  // GPT-5는 max_completion_tokens 사용 (128K 출력 지원)
+      temperature: 0.3,
+      max_completion_tokens: 8000
     });
 
     const formattedReport = response.choices[0].message.content;
