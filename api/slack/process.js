@@ -23,14 +23,15 @@ export default async function handler(req, res) {
   try {
     const { channelId, channelName, date, parentPageId } = req.body;
 
-    if (!channelId || !date || !parentPageId) {
+    if (!channelId || !parentPageId) {
       return res.status(400).json({
         error: '필수 정보가 누락되었습니다',
-        required: ['channelId', 'date', 'parentPageId']
+        required: ['channelId', 'parentPageId']
       });
     }
 
-    console.log(`📊 Slack 일일 리포트 처리 시작 - #${channelName || channelId} (${date})`);
+    const mode = date ? `일일 리포트 (${date})` : '전체 히스토리';
+    console.log(`📊 Slack ${mode} 처리 시작 - #${channelName || channelId}`);
 
     // 1. Slack에서 메시지 수집
     const slackToken = process.env.SLACK_BOT_TOKEN || appConfig.slack?.botToken;
@@ -107,11 +108,14 @@ async function formatDailyReport(messages, channelName, date) {
       return text;
     }).join('\n\n');
 
-    const systemPrompt = `당신은 Slack 채널의 일일 대화 내용을 정리하는 AI입니다.
+    const reportType = date ? '일일 대화 내용' : '채널 히스토리';
+    const dateInfo = date ? `**날짜**: ${date}` : `**기간**: 최근 메시지`;
+
+    const systemPrompt = `당신은 Slack 채널의 ${reportType}을 정리하는 AI입니다.
 
 ## 정리 형식:
 
-**날짜**: ${date}
+${dateInfo}
 **채널**: #${channelName}
 **메시지 수**: ${messages.length}개
 
@@ -158,7 +162,7 @@ async function formatDailyReport(messages, channelName, date) {
 
 한국어로 명확하고 간결하게 정리하세요.`;
 
-    const userPrompt = `다음 Slack 채널의 대화 내용을 위의 형식에 맞춰 일일 리포트로 정리해주세요.
+    const userPrompt = `다음 Slack 채널의 대화 내용을 위의 형식에 맞춰 ${date ? '일일 리포트' : '히스토리 리포트'}로 정리해주세요.
 
 ${conversationText}`;
 
@@ -175,7 +179,9 @@ ${conversationText}`;
     const formattedReport = response.choices[0].message.content;
 
     // 제목 생성
-    const title = `[Slack] #${channelName} 일일 리포트 - ${date}`;
+    const title = date
+      ? `[Slack] #${channelName} 일일 리포트 - ${date}`
+      : `[Slack] #${channelName} 히스토리 정리`;
 
     // 요약 추출 (처음 200자)
     const summary = formattedReport.substring(0, 200) + '...';

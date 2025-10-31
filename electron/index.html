@@ -50,10 +50,10 @@
             </div>
         </div>
 
-        <!-- Slack 일일 리포트 섹션 -->
+        <!-- Slack 채널 정리 섹션 -->
         <div class="slack-reporter" id="slackReporter">
             <div class="slack-header">
-                <h3>📊 Slack 채널 일일 정리</h3>
+                <h3>📊 Slack 채널 정리</h3>
             </div>
             <div class="slack-setup" id="slackSetup">
                 <div class="slack-field">
@@ -63,10 +63,6 @@
                     </select>
                 </div>
                 <div class="slack-field">
-                    <label for="slackDate" class="field-label">📅 날짜:</label>
-                    <input type="date" id="slackDate" class="slack-input" />
-                </div>
-                <div class="slack-field">
                     <label for="slackSaveLocation" class="field-label">📤 저장 위치:</label>
                     <select id="slackSaveLocation" class="slack-select">
                         <option value="">로딩 중...</option>
@@ -74,11 +70,28 @@
                 </div>
             </div>
             <div class="slack-controls">
-                <button id="processSlackBtn" class="slack-btn process-btn" disabled>
-                    <span class="btn-icon">🔄</span>
-                    <span class="btn-text">채널 내용 가져오기</span>
+                <button id="dailySummaryBtn" class="slack-btn daily-btn" disabled>
+                    <span class="btn-icon">📅</span>
+                    <span class="btn-text">일일 정리</span>
+                </button>
+                <button id="fullHistoryBtn" class="slack-btn history-btn" disabled>
+                    <span class="btn-icon">📚</span>
+                    <span class="btn-text">히스토리 전체 정리</span>
                 </button>
             </div>
+
+            <!-- 날짜 선택 모달 (일일 정리 클릭 시 표시) -->
+            <div id="dateModal" class="date-modal" style="display: none;">
+                <div class="modal-content">
+                    <h4>📅 정리할 날짜 선택</h4>
+                    <input type="date" id="slackDate" class="slack-input" />
+                    <div class="modal-buttons">
+                        <button id="confirmDateBtn" class="modal-btn confirm-btn">확인</button>
+                        <button id="cancelDateBtn" class="modal-btn cancel-btn">취소</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="slack-progress" id="slackProgress" style="display: none;">
                 <div class="progress-text" id="slackProgressText">처리 중...</div>
                 <div class="progress-bar">

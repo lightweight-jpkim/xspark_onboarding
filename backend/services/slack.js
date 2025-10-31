@@ -29,30 +29,42 @@ export class SlackService {
   }
 
   /**
-   * 특정 채널의 메시지 가져오기 (일자별)
+   * 특정 채널의 메시지 가져오기 (일자별 또는 전체)
    * @param {string} channelId - 채널 ID
-   * @param {string} date - 날짜 (YYYY-MM-DD)
+   * @param {string} date - 날짜 (YYYY-MM-DD), null이면 전체 히스토리
    */
   async getChannelMessages(channelId, date) {
     try {
-      // 날짜를 Unix timestamp로 변환
-      const targetDate = new Date(date);
-      const oldest = Math.floor(targetDate.getTime() / 1000); // 00:00:00
-      const latest = oldest + 86400; // +24시간
+      let oldest, latest;
 
-      console.log(`📅 ${date} 메시지 조회:`, {
-        channelId,
-        oldest: new Date(oldest * 1000),
-        latest: new Date(latest * 1000)
-      });
+      if (date) {
+        // 특정 날짜만
+        const targetDate = new Date(date);
+        oldest = Math.floor(targetDate.getTime() / 1000); // 00:00:00
+        latest = oldest + 86400; // +24시간
+
+        console.log(`📅 ${date} 메시지 조회:`, {
+          channelId,
+          oldest: new Date(oldest * 1000),
+          latest: new Date(latest * 1000)
+        });
+      } else {
+        // 전체 히스토리
+        console.log(`📚 전체 히스토리 조회:`, { channelId });
+      }
 
       // 메시지 가져오기
-      const result = await this.client.conversations.history({
+      const requestOptions = {
         channel: channelId,
-        oldest: oldest.toString(),
-        latest: latest.toString(),
-        limit: 1000  // 하루치면 충분할 것
-      });
+        limit: date ? 1000 : 200  // 전체 히스토리는 최근 200개만
+      };
+
+      if (date) {
+        requestOptions.oldest = oldest.toString();
+        requestOptions.latest = latest.toString();
+      }
+
+      const result = await this.client.conversations.history(requestOptions);
 
       if (!result.messages || result.messages.length === 0) {
         return [];
