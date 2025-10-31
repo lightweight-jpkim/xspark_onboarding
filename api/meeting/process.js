@@ -98,19 +98,18 @@ export default async function handler(req, res) {
     const meetingNotes = await formatMeetingNotes(transcript);
     console.log('✅ 회의록 정리 완료');
 
-    // 4. Notion에 회의록 저장
-    console.log('📝 Notion에 저장 중...');
-    const notionPage = await saveMeetingToNotion(meetingNotes, parentPageId);
-    console.log('✅ Notion 저장 완료:', notionPage.url);
+    // 4. 결과 반환 (Notion 저장은 사용자 확인 후 별도로 수행)
+    console.log('✅ 회의록 처리 완료 - 사용자 확인 대기');
 
-    // 5. 결과 반환
     return res.status(200).json({
       success: true,
       title: meetingNotes.title,
-      duration: calculateDuration(transcript),
+      content: meetingNotes.fullContent,
       summary: meetingNotes.summary,
-      notionUrl: notionPage.url,
-      notionPageId: notionPage.id
+      transcript: meetingNotes.transcript,
+      duration: calculateDuration(transcript),
+      parentPageId: parentPageId,
+      message: '회의록이 준비되었습니다. 내용을 확인하고 Notion에 저장하세요.'
     });
 
   } catch (error) {
