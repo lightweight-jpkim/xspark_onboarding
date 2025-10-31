@@ -50,12 +50,33 @@ export default async function handler(req, res) {
       page_size: 100
     });
 
-    const databases = dbSearchResponse.results.map(db => ({
-      id: db.id,
-      title: notionService.extractTitle(db),
-      url: db.url,
-      lastEditedTime: db.last_edited_time
-    }));
+    // 각 데이터베이스의 전체 정보를 가져와서 제목 추출
+    const databases = await Promise.all(
+      dbSearchResponse.results.map(async (db) => {
+        try {
+          // databases.retrieve()로 전체 정보 가져오기
+          const fullDatabase = await notionService.client.databases.retrieve({
+            database_id: db.id
+          });
+
+          return {
+            id: fullDatabase.id,
+            title: notionService.extractTitle(fullDatabase),
+            url: fullDatabase.url,
+            lastEditedTime: fullDatabase.last_edited_time
+          };
+        } catch (error) {
+          console.error(`Database ${db.id} retrieve error:`, error.message);
+          // 실패 시 search 결과 사용
+          return {
+            id: db.id,
+            title: notionService.extractTitle(db),
+            url: db.url,
+            lastEditedTime: db.last_edited_time
+          };
+        }
+      })
+    );
 
     return res.status(200).json({
       status: 'ok',
