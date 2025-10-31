@@ -157,15 +157,17 @@ async function formatMeetingNotes(transcript) {
       const examplesData = await examplesResponse.json();
 
       if (examplesData.success && examplesData.examples && examplesData.examples.length > 0) {
-        // 내용이 있는 회의록만 선택 (최대 3개)
+        // 내용이 있는 회의록만 선택 (최대 10개)
         const validExamples = examplesData.examples
           .filter(ex => ex.content && ex.content.trim().length > 50)
-          .slice(0, 3);
+          .slice(0, 10);
 
         if (validExamples.length > 0) {
           previousMeetingsContext = '\n\n## 이전 회의록 참고 (스타일 및 문맥 이해용):\n\n';
           validExamples.forEach((ex, idx) => {
-            previousMeetingsContext += `### 예시 ${idx + 1}: ${ex.title}\n${ex.content.substring(0, 800)}\n\n`;
+            // 더 많은 회의록을 포함하므로 각 회의록당 더 적은 텍스트만 포함
+            const contentPreview = ex.content.substring(0, 500);
+            previousMeetingsContext += `### 예시 ${idx + 1}: ${ex.title}\n${contentPreview}\n\n`;
           });
           console.log(`✅ ${validExamples.length}개 이전 회의록을 컨텍스트로 추가`);
         }
