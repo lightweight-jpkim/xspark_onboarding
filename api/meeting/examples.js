@@ -23,49 +23,114 @@ export default async function handler(req, res) {
   try {
     console.log('📋 회의록 샘플 가져오기 시작...');
 
-    // 회의록 데이터베이스에서 페이지 목록 가져오기
-    const response = await notionService.client.databases.query({
-      database_id: MEETING_DB_ID,
-      page_size: 10, // 최대 10개
-      sorts: [
-        {
-          timestamp: 'last_edited_time',
-          direction: 'descending'
-        }
-      ]
-    });
-
-    console.log(`✅ ${response.results.length}개 페이지 발견`);
-
-    // 각 페이지의 내용 가져오기
     const examples = [];
-    for (const page of response.results) {
-      try {
-        // 페이지 제목 추출
-        const titleProperty = page.properties['제목'] || page.properties['Name'] || page.properties['title'];
-        let title = 'Untitled';
 
-        if (titleProperty && titleProperty.title && titleProperty.title.length > 0) {
-          title = titleProperty.title.map(t => t.plain_text).join('');
-        }
+    // 방법 1: 데이터베이스에서 항목 가져오기 시도
+    try {
+      console.log('📊 방법 1: 데이터베이스 쿼리 시도...');
+      const dbResponse = await notionService.client.databases.query({
+        database_id: MEETING_DB_ID,
+        page_size: 10,
+        sorts: [
+          {
+            timestamp: 'last_edited_time',
+            direction: 'descending'
+          }
+        ]
+      });
 
-        console.log(`📄 페이지 읽기: ${title}`);
+      console.log(`  ✅ 데이터베이스에서 ${dbResponse.results.length}개 항목 발견`);
 
-        // 페이지 블록 내용 가져오기
-        const blocks = await notionService.getPageBlocks(page.id);
-        const content = notionService.blocksToText(blocks);
+      for (const page of dbResponse.results) {
+        const title = notionService.extractTitle(page);
+        console.log(`  📄 데이터베이스 항목: ${title}`);
+
+        const content = await notionService.getPageContent(page.id);
 
         examples.push({
           id: page.id,
           title,
           content,
+          source: 'database',
           created_time: page.created_time,
           last_edited_time: page.last_edited_time,
           url: page.url
         });
+      }
+    } catch (dbError) {
+      console.log('  ⚠️ 데이터베이스 쿼리 실패:', dbError.message);
+    }
 
-      } catch (error) {
-        console.error(`페이지 읽기 실패 (${page.id}):`, error.message);
+    // 방법 2: 페이지의 하위 블록(child pages) 가져오기
+    try {
+      console.log('📄 방법 2: 페이지의 하위 페이지 가져오기 시도...');
+      const blocks = await notionService.client.blocks.children.list({
+        block_id: MEETING_DB_ID,
+        page_size: 100
+      });
+
+      console.log(`  ✅ ${blocks.results.length}개 하위 블록 발견`);
+
+      // child_page 타입인 블록들만 필터링
+      const childPages = blocks.results.filter(block => block.type === 'child_page');
+      console.log(`  ✅ ${childPages.length}개 하위 페이지 발견`);
+
+      for (const childPage of childPages) {
+        const title = childPage.child_page?.title || 'Untitled';
+        console.log(`  📄 하위 페이지: ${title}`);
+
+        try {
+          const content = await notionService.getPageContent(childPage.id);
+
+          examples.push({
+            id: childPage.id,
+            title,
+            content,
+            source: 'child_page',
+            created_time: childPage.created_time,
+            last_edited_time: childPage.last_edited_time
+          });
+        } catch (error) {
+          console.error(`  ❌ 하위 페이지 내용 가져오기 실패 (${childPage.id}):`, error.message);
+        }
+      }
+    } catch (blockError) {
+      console.log('  ⚠️ 하위 페이지 가져오기 실패:', blockError.message);
+    }
+
+    // 방법 3: 전체 검색으로 "회의록" 관련 페이지 찾기
+    if (examples.length === 0) {
+      console.log('🔍 방법 3: 전체 검색으로 회의록 찾기...');
+      const searchResponse = await notionService.client.search({
+        query: '회의록',
+        filter: {
+          property: 'object',
+          value: 'page'
+        },
+        page_size: 10,
+        sort: {
+          direction: 'descending',
+          timestamp: 'last_edited_time'
+        }
+      });
+
+      console.log(`  ✅ 검색 결과 ${searchResponse.results.length}개 페이지 발견`);
+
+      for (const page of searchResponse.results) {
+        const title = notionService.extractTitle(page);
+        console.log(`  📄 검색 결과: ${title}`);
+
+        const content = await notionService.getPageContent(page.id);
+
+        examples.push({
+          id: page.id,
+          title,
+          content,
+          source: 'search',
+          created_time: page.created_time,
+          last_edited_time: page.last_edited_time,
+          url: page.url
+        });
       }
     }
 
@@ -81,7 +146,8 @@ export default async function handler(req, res) {
     console.error('❌ 회의록 샘플 가져오기 실패:', error);
     return res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
+      stack: error.stack
     });
   }
 }
