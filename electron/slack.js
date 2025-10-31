@@ -123,7 +123,7 @@ class SlackManager {
         throw new Error('저장 위치를 불러올 수 없습니다');
       }
 
-      this.databases = data.accessible.databases;
+      this.databases = data.accessible.databases.list || [];
 
       this.slackSaveLocation.innerHTML = '<option value="">저장 위치 선택...</option>';
       this.databases.forEach(db => {
