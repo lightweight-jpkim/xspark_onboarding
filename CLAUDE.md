@@ -459,6 +459,117 @@ xspark_onboarding/
 
 ---
 
+## 📦 v2.2.0 릴리스 (2025-10-31)
+
+### 주요 변경사항
+
+**1. GPT-4o → GPT-5 모델 전환** 🚀
+- ✅ OpenAI 최신 GPT-5 모델로 마이그레이션
+- ✅ 모든 API 엔드포인트 GPT-5 호환성 완료
+- ✅ Vercel 환경변수 `OPENAI_MODEL=gpt-5`로 변경
+
+**2. Slack 히스토리 정리 템플릿 개선** 📊
+- ✅ 기존 주제별 요약 → **타임라인 + 안건 기반** 구조로 변경
+- ✅ Decision Log 테이블 형식 추가
+- ✅ 액션 아이템을 담당자별로 구조화
+- ✅ 더 자세한 내용 보존 (요약 최소화)
+
+### 기술적 변경사항
+
+**GPT-5 API 호환성 수정:**
+- `temperature` 파라미터 제거 (GPT-5는 기본값 1만 지원)
+- `max_tokens` → `max_completion_tokens`로 변경
+- `max_completion_tokens` 증가: 8000 (Slack), 3000 (회의록), 2500 (채팅)
+
+**수정된 파일:**
+1. `api/slack/process.js`
+   - 새로운 타임라인 템플릿 적용 (라인 114-201)
+   - GPT-5 호환성 수정 (라인 207-215)
+   - `max_completion_tokens: 8000` (128K 출력 지원)
+
+2. `api/meeting/process.js`
+   - GPT-5 호환성 수정 (라인 284-286)
+   - `max_completion_tokens: 3000`
+
+3. `backend/services/openai.js`
+   - 3개 함수 모두 GPT-5 호환성 수정
+   - 메인 채팅 (라인 145-146): `max_completion_tokens: 2500`
+   - FAQ 요약 (라인 247-248): `max_completion_tokens: 500`
+   - 스트리밍 (라인 277-278): `max_completion_tokens: 1000`
+
+### 새로운 Slack 리포트 템플릿 구조
+
+```
+### 🧭 프로젝트 히스토리 - #채널명
+
+#### 1️⃣ 문서 개요
+- 채널, 기간, 메시지 수, 작성일, 참여자
+
+#### 2️⃣ 주요 타임라인
+**[시간대/주차]**
+- 🔥 이슈 / 논의
+- 📎 공유 자료
+- ✅ 결정 사항
+- 👤 담당자 / 액션
+
+#### 3️⃣ 결정사항 요약 (Decision Log)
+| 날짜/시간 | 결정 내용 | 관련자 | 후속 조치 |
+
+#### 4️⃣ 액션 아이템 목록 (담당자별)
+**👤 @담당자**
+- [ ] 업무 내용 - 마감 - 상태
+
+#### 5️⃣ 참고 자료 및 링크
+
+#### 6️⃣ 종합 요약
+```
+
+### Git 커밋 이력
+
+```bash
+aaa3ec6 - fix: Update Slack report template to timeline-based format and upgrade to GPT-5
+83cc211 - fix: Remove temperature parameter for GPT-5 compatibility
+4871528 - fix: Complete GPT-5 compatibility for chat API
+```
+
+### 배포 정보
+
+**Vercel 환경변수:**
+- `OPENAI_MODEL=gpt-5` (업데이트됨)
+
+**자동 배포:**
+- GitHub push 시 Vercel 자동 배포
+- 3개 커밋 모두 프로덕션 배포 완료
+
+### 문제 해결 과정
+
+**이슈 1: max_tokens 파라미터 오류**
+```
+Error: 400 Unsupported parameter: 'max_tokens' is not supported with this model.
+```
+→ `max_completion_tokens`로 변경
+
+**이슈 2: temperature 파라미터 오류**
+```
+Error: 400 Unsupported value: 'temperature' does not support 0.3 with this model.
+```
+→ temperature 파라미터 제거 (기본값 1 사용)
+
+**이슈 3: 채팅 API 500 에러**
+```
+POST /api/chat 500 (Internal Server Error)
+```
+→ backend/services/openai.js의 모든 함수 수정
+
+### 테스트 상태
+
+- ✅ Slack 히스토리 정리 (일일/전체)
+- ✅ 회의록 자동 생성
+- ✅ 채팅 기능 (Notion RAG)
+- ✅ Electron 앱 재실행
+
+---
+
 ## 다음 할 일
 1. ✅ 프로젝트 초기 설정 완료
 2. ✅ MVP 코드 구현 완료
