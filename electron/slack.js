@@ -83,14 +83,28 @@ class SlackManager {
       this.channels = data.channels;
 
       this.slackChannel.innerHTML = '<option value="">채널 선택...</option>';
+
+      let defaultChannelId = null;
       data.channels.forEach(channel => {
         const option = document.createElement('option');
         option.value = channel.id;
         option.textContent = `#${channel.name}${channel.isPrivate ? ' 🔒' : ''}`;
         this.slackChannel.appendChild(option);
+
+        // xbrush_xspark 채널을 기본값으로 설정
+        if (channel.name === 'xbrush_xspark') {
+          defaultChannelId = channel.id;
+        }
       });
 
-      console.log(`✅ ${data.channels.length}개 채널 로드 완료`);
+      // 기본 채널 선택
+      if (defaultChannelId) {
+        this.slackChannel.value = defaultChannelId;
+        this.validateForm();
+        console.log(`✅ ${data.channels.length}개 채널 로드 완료 (기본: #xbrush_xspark)`);
+      } else {
+        console.log(`✅ ${data.channels.length}개 채널 로드 완료`);
+      }
     } catch (error) {
       console.error('❌ 채널 로드 실패:', error);
       this.slackChannel.innerHTML = '<option value="">채널 로드 실패</option>';
