@@ -136,10 +136,20 @@ export default async function handler(req, res) {
 
     console.log(`✅ 총 ${examples.length}개 회의록 샘플 수집 완료`);
 
+    // 회의 날짜 기준으로 정렬 (최신순)
+    const sortedExamples = examples.sort((a, b) => {
+      // created_time을 날짜로 파싱하여 비교 (최신이 먼저)
+      const dateA = new Date(a.created_time || a.last_edited_time);
+      const dateB = new Date(b.created_time || b.last_edited_time);
+      return dateB - dateA; // 내림차순 (최신순)
+    });
+
+    console.log(`✅ 회의 날짜 기준으로 정렬 완료`);
+
     return res.status(200).json({
       success: true,
-      count: examples.length,
-      examples
+      count: sortedExamples.length,
+      examples: sortedExamples
     });
 
   } catch (error) {
