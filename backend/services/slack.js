@@ -71,7 +71,9 @@ export class SlackService {
           requestOptions.latest = latest.toString();
         }
 
+        console.log(`🔍 페이지 ${pageCount + 1} 요청 중... (cursor: ${cursor ? 'yes' : 'no'})`);
         const result = await this.client.conversations.history(requestOptions);
+        console.log(`📥 응답: messages=${result.messages?.length}, has_more=${result.has_more}, next_cursor=${result.response_metadata?.next_cursor ? 'yes' : 'no'}`);
 
         if (result.messages && result.messages.length > 0) {
           allMessages = allMessages.concat(result.messages);
@@ -83,6 +85,7 @@ export class SlackService {
 
         // 더 이상 메시지가 없거나 최대 페이지 도달
         if (!result.has_more || !cursor || pageCount >= maxPages) {
+          console.log(`🛑 중단 조건: has_more=${result.has_more}, cursor=${!!cursor}, pageCount=${pageCount}/${maxPages}`);
           break;
         }
 
