@@ -68,6 +68,31 @@ export default async function handler(req, res) {
     const transcript = await transcribeAudio(audioFilePath);
     console.log('✅ 텍스트 변환 완료:', transcript.substring(0, 100) + '...');
 
+    // 2-1. 변환된 텍스트 품질 검증
+    const transcriptLength = transcript.trim().length;
+    const wordCount = transcript.trim().split(/\s+/).length;
+
+    console.log(`📊 변환 품질 체크: 길이=${transcriptLength}자, 단어수=${wordCount}개`);
+
+    if (transcriptLength < 50) {
+      throw new Error('녹음된 내용이 너무 짧습니다. 최소 50자 이상의 음성이 필요합니다.');
+    }
+
+    if (wordCount < 10) {
+      throw new Error('녹음된 단어가 너무 적습니다. 실제 회의 내용이 녹음되었는지 확인해주세요.');
+    }
+
+    // 의미없는 반복이나 노이즈 감지 (같은 단어가 80% 이상 반복)
+    const words = transcript.trim().split(/\s+/);
+    const uniqueWords = new Set(words);
+    const uniqueRatio = uniqueWords.size / words.length;
+
+    if (uniqueRatio < 0.2) {
+      throw new Error('녹음 품질이 낮거나 의미있는 대화가 감지되지 않았습니다. 다시 녹음해주세요.');
+    }
+
+    console.log('✅ 녹음 품질 검증 통과');
+
     // 3. GPT-4o로 회의록 정리
     console.log('🤖 GPT-4o로 회의록 정리 중...');
     const meetingNotes = await formatMeetingNotes(transcript);
