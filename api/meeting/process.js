@@ -146,23 +146,102 @@ async function transcribeAudio(filePath) {
 }
 
 /**
- * GPT-4o로 회의록 정리
+ * GPT-4o로 회의록 정리 (기존 회의록 참조)
  */
 async function formatMeetingNotes(transcript) {
   try {
-    const systemPrompt = `당신은 전문 회의록 작성 AI입니다.
+    // 1. 기존 회의록 샘플 가져오기 (문맥 이해를 위해)
+    let previousMeetingsContext = '';
+    try {
+      const examplesResponse = await fetch('https://xspark-onboarding.vercel.app/api/meeting/examples');
+      const examplesData = await examplesResponse.json();
 
-회의 녹취록을 받아 다음 형식으로 구조화된 회의록을 작성하세요:
+      if (examplesData.success && examplesData.examples && examplesData.examples.length > 0) {
+        // 내용이 있는 회의록만 선택 (최대 3개)
+        const validExamples = examplesData.examples
+          .filter(ex => ex.content && ex.content.trim().length > 50)
+          .slice(0, 3);
 
-## 형식:
-1. **제목**: 회의 주제를 간결하게 요약 (예: "xspark 제품 개발 회의")
-2. **요약**: 3-4문장으로 회의 전체 내용 요약
-3. **주요 논의사항**: 불릿 포인트로 나열
-4. **결정된 사항**: 구체적인 결정사항 나열
-5. **액션 아이템**: 담당자와 할 일 (있는 경우만)
-6. **다음 회의 안건**: 다음에 논의할 주제 (있는 경우만)
+        if (validExamples.length > 0) {
+          previousMeetingsContext = '\n\n## 이전 회의록 참고 (스타일 및 문맥 이해용):\n\n';
+          validExamples.forEach((ex, idx) => {
+            previousMeetingsContext += `### 예시 ${idx + 1}: ${ex.title}\n${ex.content.substring(0, 800)}\n\n`;
+          });
+          console.log(`✅ ${validExamples.length}개 이전 회의록을 컨텍스트로 추가`);
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ 이전 회의록 가져오기 실패 (계속 진행):', error.message);
+    }
 
-한국어로 작성하고, 명확하고 간결하게 정리하세요.`;
+    const systemPrompt = `당신은 xspark 프로젝트 전문 회의록 작성 AI입니다.
+
+## 역할:
+- xspark 제품 개발 회의록을 작성합니다
+- 이전 회의록들의 스타일과 문맥을 참고하여 일관성 있게 작성합니다
+- 제품/기능에 대한 문맥을 이해하고 논의 내용을 구조화합니다
+
+## 회의록 작성 형식:
+
+**제목**: [회의 주제를 명확하고 간결하게] (예: "XSpark Live 모델 변경 회의")
+
+**날짜**: [회의 날짜]
+
+**참석자**: [참석자 목록] (언급된 경우)
+
+**회의 내용**: [전체 요약 2-3문장]
+
+---
+
+## 주요 논의 사항
+
+### [주제 1: 질문 형식 또는 기능명]
+- 논의 내용 정리
+- 핵심 포인트
+
+### [주제 2: 질문 형식 또는 기능명]
+- 논의 내용 정리
+- 핵심 포인트
+
+### [주제 3: ...]
+...
+
+---
+
+## 결정 사항
+- ✅ [구체적인 결정 사항 1]
+- ✅ [구체적인 결정 사항 2]
+
+---
+
+## 액션 아이템
+- [ ] [담당자]: [할 일] (기한: [날짜])
+- [ ] [담당자]: [할 일]
+
+---
+
+## 추후 검토 사항
+- [나중에 다시 논의할 주제]
+
+---
+
+## 기술적 세부사항 (해당 시)
+- API 엔드포인트, 데이터 모델, 기술 스택 등
+
+## 작성 가이드라인:
+1. **문맥 파악**: 이전 회의록들을 참고하여 제품/기능의 문맥을 이해하고 작성
+2. **질문 중심**: 논의 주제를 질문 형태로 정리 (예: "페르소나란?", "정산은 어떻게?")
+3. **명확성**: 기술 용어는 명확하게, 결정사항은 구체적으로
+4. **일관성**: 기존 회의록 스타일을 유지
+5. **구조화**: 관련 주제끼리 묶어서 정리
+
+한국어로 작성하고, 전문적이면서도 명확하게 정리하세요.`;
+
+    const userPrompt = `다음 회의 녹취록을 위의 형식에 맞춰 정리해주세요.${previousMeetingsContext}
+
+## 새로운 회의 녹취록:
+
+${transcript}`;
 
     const response = await openai.chat.completions.create({
       model: appConfig.openai.model,
@@ -173,11 +252,11 @@ async function formatMeetingNotes(transcript) {
         },
         {
           role: 'user',
-          content: `다음 회의 녹취록을 정리해주세요:\n\n${transcript}`
+          content: userPrompt
         }
       ],
-      temperature: 0.5,
-      max_tokens: 2000
+      temperature: 0.3, // 더 일관성 있는 출력을 위해 낮춤
+      max_tokens: 3000  // 더 자세한 회의록을 위해 증가
     });
 
     const formattedNotes = response.choices[0].message.content;
