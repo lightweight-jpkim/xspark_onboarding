@@ -142,8 +142,8 @@ xspark 프로덕트에 대해 무엇이든 물어보세요!"
             content: userPrompt
           }
         ],
-        temperature: 0.7,
-        max_tokens: 2500,  // 1000에서 2500으로 증가 - 더 상세한 답변
+        // GPT-5는 temperature 커스터마이징 미지원 (기본값 1 사용)
+        max_completion_tokens: 2500,  // GPT-5는 max_completion_tokens 사용
         top_p: 1,
         frequency_penalty: 0,
         presence_penalty: 0
@@ -244,8 +244,8 @@ xspark 프로덕트에 대해 무엇이든 물어보세요!"
             content: conversationText
           }
         ],
-        temperature: 0.5,
-        max_tokens: 500
+        // GPT-5는 temperature 커스터마이징 미지원 (기본값 1 사용)
+        max_completion_tokens: 500
       });
 
       return response.choices[0].message.content;
@@ -274,8 +274,8 @@ xspark 프로덕트에 대해 무엇이든 물어보세요!"
         }
       ],
       stream: true,
-      temperature: 0.7,
-      max_tokens: 1000
+      // GPT-5는 temperature 커스터마이징 미지원 (기본값 1 사용)
+      max_completion_tokens: 1000
     });
 
     return stream;
