@@ -257,16 +257,28 @@ export class NotionService {
   }
 
   /**
-   * 페이지 제목 추출
+   * 페이지/데이터베이스 제목 추출
+   * 페이지와 데이터베이스는 title 구조가 다름
    */
-  extractTitle(page) {
+  extractTitle(pageOrDatabase) {
     try {
-      if (page.properties?.title?.title?.[0]?.plain_text) {
-        return page.properties.title.title[0].plain_text;
+      // 데이터베이스: database.title (직접)
+      if (pageOrDatabase.title && Array.isArray(pageOrDatabase.title)) {
+        if (pageOrDatabase.title.length > 0 && pageOrDatabase.title[0].plain_text) {
+          return pageOrDatabase.title[0].plain_text;
+        }
       }
-      if (page.properties?.Name?.title?.[0]?.plain_text) {
-        return page.properties.Name.title[0].plain_text;
+
+      // 페이지: page.properties.title.title
+      if (pageOrDatabase.properties?.title?.title?.[0]?.plain_text) {
+        return pageOrDatabase.properties.title.title[0].plain_text;
       }
+
+      // 페이지: page.properties.Name.title (일부 데이터베이스 항목)
+      if (pageOrDatabase.properties?.Name?.title?.[0]?.plain_text) {
+        return pageOrDatabase.properties.Name.title[0].plain_text;
+      }
+
       return 'Untitled';
     } catch (error) {
       return 'Untitled';
