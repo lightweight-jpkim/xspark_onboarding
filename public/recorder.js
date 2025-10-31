@@ -28,15 +28,19 @@ class MeetingRecorder {
     }
 
     /**
-     * 전체 페이지 목록 로드
+     * 전체 페이지 및 데이터베이스 목록 로드
      */
     async loadPageList() {
         try {
             const response = await fetch('/api/debug');
             const data = await response.json();
 
-            if (data.accessible && data.accessible.pages) {
-                this.allPages = data.accessible.pages.list;
+            if (data.accessible) {
+                // 페이지와 데이터베이스 모두 병합
+                const pages = data.accessible.pages?.list || [];
+                const databases = data.accessible.databases?.list || [];
+
+                this.allPages = [...pages, ...databases];
 
                 // 드롭다운 채우기
                 this.populateLocationSelect();
