@@ -43,6 +43,17 @@ export default async function handler(req, res) {
       throw new Error('오디오 파일이 없습니다');
     }
 
+    // 부모 페이지 ID 확인
+    const parentPageId = Array.isArray(fields.parentPageId)
+      ? fields.parentPageId[0]
+      : fields.parentPageId;
+
+    if (!parentPageId) {
+      throw new Error('저장 위치가 선택되지 않았습니다');
+    }
+
+    console.log('📁 저장 위치:', parentPageId);
+
     const audioFile = Array.isArray(files.audio) ? files.audio[0] : files.audio;
     audioFilePath = audioFile.filepath;
 
@@ -64,7 +75,7 @@ export default async function handler(req, res) {
 
     // 4. Notion에 회의록 저장
     console.log('📝 Notion에 저장 중...');
-    const notionPage = await saveMeetingToNotion(meetingNotes);
+    const notionPage = await saveMeetingToNotion(meetingNotes, parentPageId);
     console.log('✅ Notion 저장 완료:', notionPage.url);
 
     // 5. 결과 반환
@@ -195,13 +206,10 @@ async function formatMeetingNotes(transcript) {
 /**
  * Notion에 회의록 저장
  */
-async function saveMeetingToNotion(meetingNotes) {
+async function saveMeetingToNotion(meetingNotes, parentPageId) {
   try {
-    // 회의록 저장할 부모 페이지 ID (환경변수 또는 기본값)
-    const parentPageId = process.env.NOTION_MEETING_PARENT_ID || process.env.NOTION_ONBOARDING_PAGE_ID;
-
     if (!parentPageId) {
-      throw new Error('NOTION_MEETING_PARENT_ID 환경변수가 설정되지 않았습니다');
+      throw new Error('저장 위치 (parentPageId)가 지정되지 않았습니다');
     }
 
     // Notion 페이지 생성

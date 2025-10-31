@@ -15,8 +15,18 @@
 
         <!-- 회의 녹음 섹션 -->
         <div class="meeting-recorder" id="meetingRecorder">
+            <div class="recorder-setup" id="recorderSetup">
+                <div class="save-location-selector">
+                    <label for="saveLocation" class="selector-label">
+                        📁 회의록 저장 위치:
+                    </label>
+                    <select id="saveLocation" class="location-select">
+                        <option value="">로딩 중...</option>
+                    </select>
+                </div>
+            </div>
             <div class="recorder-controls">
-                <button id="startRecordingBtn" class="recorder-btn start-btn">
+                <button id="startRecordingBtn" class="recorder-btn start-btn" disabled>
                     <span class="btn-icon">🎤</span>
                     <span class="btn-text">회의 녹음 시작</span>
                 </button>

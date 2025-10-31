@@ -244,6 +244,49 @@ body {
     border-bottom: 1px solid #e0e0e0;
 }
 
+.recorder-setup {
+    margin-bottom: 15px;
+}
+
+.save-location-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+}
+
+.selector-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+.location-select {
+    padding: 8px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.3s;
+    min-width: 250px;
+}
+
+.location-select:hover {
+    border-color: #667eea;
+}
+
+.location-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.location-select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .recorder-controls {
     display: flex;
     align-items: center;

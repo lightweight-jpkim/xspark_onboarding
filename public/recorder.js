@@ -5,6 +5,8 @@ class MeetingRecorder {
         this.audioChunks = [];
         this.startTime = null;
         this.timerInterval = null;
+        this.selectedPageId = null;
+        this.allPages = [];
 
         // DOM 요소
         this.startBtn = document.getElementById('startRecordingBtn');
@@ -14,10 +16,84 @@ class MeetingRecorder {
         this.recorderProgress = document.getElementById('recorderProgress');
         this.progressText = document.getElementById('progressText');
         this.progressFill = document.getElementById('progressFill');
+        this.saveLocationSelect = document.getElementById('saveLocation');
 
         // 이벤트 리스너
         this.startBtn.addEventListener('click', () => this.startRecording());
         this.stopBtn.addEventListener('click', () => this.stopRecording());
+        this.saveLocationSelect.addEventListener('change', (e) => this.onLocationChange(e));
+
+        // 페이지 목록 로드
+        this.loadPageList();
+    }
+
+    /**
+     * 전체 페이지 목록 로드
+     */
+    async loadPageList() {
+        try {
+            const response = await fetch('/api/debug');
+            const data = await response.json();
+
+            if (data.accessible && data.accessible.pages) {
+                this.allPages = data.accessible.pages.list;
+
+                // 드롭다운 채우기
+                this.populateLocationSelect();
+            }
+
+        } catch (error) {
+            console.error('페이지 목록 로드 실패:', error);
+            this.saveLocationSelect.innerHTML = '<option value="">로드 실패</option>';
+        }
+    }
+
+    /**
+     * 드롭다운에 페이지 목록 추가
+     */
+    populateLocationSelect() {
+        this.saveLocationSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
+
+        // 최근 수정된 순으로 정렬
+        const sorted = [...this.allPages].sort((a, b) =>
+            new Date(b.lastEditedTime) - new Date(a.lastEditedTime)
+        );
+
+        sorted.forEach(page => {
+            const option = document.createElement('option');
+            option.value = page.id;
+
+            // 제목이 "Untitled"인 경우 URL로 표시
+            let displayName = page.title;
+            if (displayName === 'Untitled' || !displayName.trim()) {
+                displayName = `(제목 없음 - ${new Date(page.lastEditedTime).toLocaleDateString('ko-KR')})`;
+            }
+
+            option.textContent = displayName;
+            option.title = `최종 수정: ${new Date(page.lastEditedTime).toLocaleString('ko-KR')}`;
+
+            this.saveLocationSelect.appendChild(option);
+        });
+
+        // 기본 선택: "회의록" 또는 "meeting" 키워드가 있는 페이지
+        const defaultPage = sorted.find(p =>
+            p.title.toLowerCase().includes('회의록') ||
+            p.title.toLowerCase().includes('meeting')
+        );
+
+        if (defaultPage) {
+            this.saveLocationSelect.value = defaultPage.id;
+            this.selectedPageId = defaultPage.id;
+            this.startBtn.disabled = false;
+        }
+    }
+
+    /**
+     * 저장 위치 선택 이벤트
+     */
+    onLocationChange(event) {
+        this.selectedPageId = event.target.value;
+        this.startBtn.disabled = !this.selectedPageId;
     }
 
     async startRecording() {
@@ -103,6 +179,7 @@ class MeetingRecorder {
             // FormData 생성
             const formData = new FormData();
             formData.append('audio', audioBlob, 'meeting.webm');
+            formData.append('parentPageId', this.selectedPageId); // 선택된 페이지 ID 추가
 
             this.progressText.textContent = '서버로 업로드 중...';
             this.progressFill.style.width = '30%';
