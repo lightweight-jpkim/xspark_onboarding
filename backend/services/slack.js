@@ -53,25 +53,49 @@ export class SlackService {
         console.log(`📚 전체 히스토리 조회:`, { channelId });
       }
 
-      // 메시지 가져오기
-      const requestOptions = {
-        channel: channelId,
-        limit: date ? 1000 : 200  // 전체 히스토리는 최근 200개만
-      };
+      // 메시지 가져오기 (페이지네이션 지원)
+      let allMessages = [];
+      let cursor = null;
+      let pageCount = 0;
+      const maxPages = date ? 10 : 100; // 일일: 최대 10페이지(10,000개), 전체: 100페이지(100,000개)
 
-      if (date) {
-        requestOptions.oldest = oldest.toString();
-        requestOptions.latest = latest.toString();
-      }
+      do {
+        const requestOptions = {
+          channel: channelId,
+          limit: 1000, // 페이지당 최대 1000개
+          cursor: cursor
+        };
 
-      const result = await this.client.conversations.history(requestOptions);
+        if (date) {
+          requestOptions.oldest = oldest.toString();
+          requestOptions.latest = latest.toString();
+        }
 
-      if (!result.messages || result.messages.length === 0) {
+        const result = await this.client.conversations.history(requestOptions);
+
+        if (result.messages && result.messages.length > 0) {
+          allMessages = allMessages.concat(result.messages);
+          console.log(`  📄 페이지 ${pageCount + 1}: ${result.messages.length}개 메시지 (누적: ${allMessages.length}개)`);
+        }
+
+        cursor = result.response_metadata?.next_cursor;
+        pageCount++;
+
+        // 더 이상 메시지가 없거나 최대 페이지 도달
+        if (!result.has_more || !cursor || pageCount >= maxPages) {
+          break;
+        }
+
+      } while (cursor);
+
+      if (allMessages.length === 0) {
         return [];
       }
 
+      console.log(`📊 총 ${allMessages.length}개 메시지 수집 완료 (${pageCount}페이지)`);
+
       // 메시지를 시간순으로 정렬 (오래된 것부터)
-      const messages = result.messages.reverse();
+      const messages = allMessages.reverse();
 
       // 사용자 정보 가져오기 (한 번에)
       const userIds = [...new Set(messages.map(m => m.user).filter(Boolean))];
