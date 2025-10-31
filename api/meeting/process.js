@@ -206,24 +206,38 @@ async function formatMeetingNotes(transcript) {
 /**
  * Notion에 회의록 저장
  */
-async function saveMeetingToNotion(meetingNotes, parentPageId) {
+async function saveMeetingToNotion(meetingNotes, databaseId) {
   try {
-    if (!parentPageId) {
-      throw new Error('저장 위치 (parentPageId)가 지정되지 않았습니다');
+    if (!databaseId) {
+      throw new Error('저장 위치 (databaseId)가 지정되지 않았습니다');
     }
 
-    // Notion 페이지 생성
+    // Notion 데이터베이스에 항목 생성
     const page = await notionService.client.pages.create({
       parent: {
-        type: 'page_id',
-        page_id: parentPageId
+        type: 'database_id',
+        database_id: databaseId
       },
       properties: {
-        title: {
+        '회의 이름': {
           title: [
             {
               text: {
-                content: `${meetingNotes.title} - ${new Date().toLocaleDateString('ko-KR')}`
+                content: meetingNotes.title
+              }
+            }
+          ]
+        },
+        '날짜': {
+          date: {
+            start: new Date().toISOString().split('T')[0]
+          }
+        },
+        '요약': {
+          rich_text: [
+            {
+              text: {
+                content: meetingNotes.summary.substring(0, 2000) // Notion 제한
               }
             }
           ]
