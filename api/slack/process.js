@@ -210,7 +210,7 @@ ${conversationText}`;
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      temperature: 0.3,
+      // GPT-5는 temperature 커스터마이징 미지원 (기본값 1 사용)
       max_completion_tokens: 8000  // GPT-5는 max_completion_tokens 사용 (128K 출력 지원)
     });
 

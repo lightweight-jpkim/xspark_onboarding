@@ -281,7 +281,7 @@ ${transcript}`;
           content: userPrompt
         }
       ],
-      temperature: 0.3, // 더 일관성 있는 출력을 위해 낮춤
+      // GPT-5는 temperature 커스터마이징 미지원 (기본값 1 사용)
       max_completion_tokens: 3000  // GPT-5는 max_completion_tokens 사용
     });
 
